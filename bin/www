@@ -88,3 +88,39 @@ function onListening() {
     : 'port ' + addr.port;
   debug('Listening on ' + bind);
 }
+
+/**
+ * Creating an XMPP client. 
+ */
+var Client = require('node-xmpp-client');
+var config = require('../config');
+
+var client = new Client({
+  jid: config.botUsername,
+  password: config.botPassword, 
+  host: 'jabb3r.org'
+})
+
+client.on('online', function() {
+  console.log('online');
+  client.send('<presence/>');
+})
+
+// Echoing response via stanza 
+client.on('stanza', function (stanza) {
+  console.log('Incoming stanza: ', stanza.toString());
+  if (stanza.is('message') &&
+    // Important: never reply to errors!
+    (stanza.attrs.type !== 'error')) {
+    // Swap addresses...
+    stanza.attrs.to = stanza.attrs.from
+    delete stanza.attrs.from
+    // and send back
+    console.log('Sending response: ' + stanza.root().toString())
+    client.send(stanza)
+  }
+})
+
+client.on('error', function (e) {
+  console.error(e)
+})
